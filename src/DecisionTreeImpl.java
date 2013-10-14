@@ -20,7 +20,9 @@ public class DecisionTreeImpl extends DecisionTree {
 	private List<Integer> validAttributeList;
 	
 	private MDecTreeNode decisionTree; 
+	
 	private List<String> attributeList;
+	private List<List<String>> attributeSubNodeList;
 	
 	/**
 	 * Answers static questions about decision trees.
@@ -48,13 +50,68 @@ public class DecisionTreeImpl extends DecisionTree {
 			System.exit(1);
 		} else {
 			attributeList=new ArrayList<String>();
+			this.attributeSubNodeList=new ArrayList<List<String>>();
+			
 			attributeList.add("Status of existing checking account");
+			List<String> subNodeList1=new ArrayList<String>();
+			subNodeList1.add("A11");
+			subNodeList1.add("A12");
+			subNodeList1.add("A13");
+			subNodeList1.add("A14");
+			this.attributeSubNodeList.add(subNodeList1);
+
 			attributeList.add("Credit history");
+			List<String> subNodeList2=new ArrayList<String>();
+			subNodeList2.add("A20");
+			subNodeList2.add("A21");
+			subNodeList2.add("A22");
+			subNodeList2.add("A23");
+			subNodeList2.add("A24");
+			this.attributeSubNodeList.add(subNodeList2);
+			
 			attributeList.add("Purpose");
+			List<String> subNodeList3=new ArrayList<String>();
+			subNodeList3.add("A30");
+			subNodeList3.add("A31");
+			subNodeList3.add("A32");
+			subNodeList3.add("A33");
+			subNodeList3.add("A34");
+			subNodeList3.add("A35");
+			subNodeList3.add("A36");
+			subNodeList3.add("A37");
+			subNodeList3.add("A38");
+			subNodeList3.add("A39");
+			subNodeList3.add("A310");
+			this.attributeSubNodeList.add(subNodeList3);
+		
 			attributeList.add("Savings account/bonds");
+			List<String> subNodeList4=new ArrayList<String>();
+			subNodeList4.add("A40");
+			subNodeList4.add("A41");
+			subNodeList4.add("A42");
+			subNodeList4.add("A43");
+			subNodeList4.add("A44");
+			subNodeList4.add("A45");
+			this.attributeSubNodeList.add(subNodeList4);
+
 			attributeList.add("Duration in month");
+			List<String> subNodeList5=new ArrayList<String>();
+			subNodeList5.add("A");
+			subNodeList5.add("B");
+			this.attributeSubNodeList.add(subNodeList5);
+			
 			attributeList.add("Credit amount");
+			List<String> subNodeList6=new ArrayList<String>();
+			subNodeList6.add("A");
+			subNodeList6.add("B");
+			this.attributeSubNodeList.add(subNodeList6);
+
 			attributeList.add("foreign worker");			
+			List<String> subNodeList7=new ArrayList<String>();
+			subNodeList7.add("A71");
+			subNodeList7.add("A72");
+			this.attributeSubNodeList.add(subNodeList7);
+
 			this.validAttributeList=new ArrayList<Integer>();
 			for (int i=0; i<7;i++){
 				this.validAttributeList.add(i);
