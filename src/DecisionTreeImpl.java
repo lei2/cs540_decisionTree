@@ -138,11 +138,12 @@ public class DecisionTreeImpl extends DecisionTree {
 	private void buildDecisionTree(List<Instance> instances,
 			List<Integer> attributes, MDecTreeNode curNode) {
 		// if empty, return plurality value of parents
-		if (instances.isEmpty()) {
-			//label is parent's label by default
-			//acknowledge leaf
+		if (null==instances || instances.isEmpty()) {
+			//the label is parent's label by default
+			//tie condition. break it by setting the label to be 1
 			curNode.terminal=true;
 			curNode.children=null;
+			curNode.label="1";
 			return;
 		} else if (allSameLabel(instances)) {
 			//acknowledge leaf, change label
@@ -177,22 +178,54 @@ public class DecisionTreeImpl extends DecisionTree {
 					attMap.put(mAtt, newList);
 				}
 			}
-			for (Map.Entry<String, List<Instance>> mEntry : attMap.entrySet()) {
+			for (String subNode:this.attributeSubNodeList.get(attributes.get(curAttr))){
 				// construct a child new node for each answer
 				// by default, the child's label is its parents label, attribute is null. the child is not a leaf
 				MDecTreeNode childNode = new MDecTreeNode(
 						curLabel,
 						null,
-						mEntry.getKey(), false,-1);
+						subNode, false,-1);
+				if (4==attributes.get(curAttr) || 5==attributes.get(curAttr)){
+					childNode.midPoint=trueATTMidPoint(attributes.get(curAttr), instances);
+				}
 				//a deep copy of attributes
 				List<Integer> childAttributes=new ArrayList<Integer>(attributes);
 				//does it affect original list? DEBUG
 				childAttributes.remove(curAttr);
 				curNode.addChild(childNode);
-				buildDecisionTree(mEntry.getValue(), childAttributes, childNode);
+				List<Instance> instancesWithSubNode=attMap.get(subNode);
+				buildDecisionTree(instancesWithSubNode, childAttributes, childNode);				
 			}
 		}
 
+	}
+
+	/**
+	 * find the midpoint for attribute 5 and 6
+	 * @param curAttr
+	 * @param instances
+	 * @return the mid point
+	 */
+	private double trueATTMidPoint(Integer curAttr, List<Instance> instances) {
+		//discretize
+		List<Integer> valueList=new ArrayList<Integer>();
+		for (Instance eachItem: instances){
+			valueList.add(Integer.valueOf(eachItem.attributes.get(curAttr)));
+		}
+		//find the max and min
+		int max=Integer.MIN_VALUE;
+		int min=Integer.MAX_VALUE;
+		for (int index=0;index<valueList.size();index++){
+			int value=valueList.get(index);
+			if (value>max){
+				max=value;
+			}
+			if (value < min){
+				min=value;
+			}
+		}
+		double midPoint=0.5*(max+min);
+		return midPoint;
 	}
 
 	/**
@@ -285,7 +318,7 @@ public class DecisionTreeImpl extends DecisionTree {
 					System.out.println("0 instances for attribute value::  attribute: "+attributes.get(index)+" attribute value:"+mEntry.getKey());
 				}
 			}
-			if (condEntropy < minValue) {
+			if (condEntropy <= minValue) {
 				minValue = condEntropy;
 				minIndex = index;
 			}
@@ -391,9 +424,39 @@ public class DecisionTreeImpl extends DecisionTree {
 	 *            the tuning set
 	 */
 	DecisionTreeImpl(DataSet train, DataSet tune) {
+		//build the original decision tree first
+		this(train);
+		double oriAcc=this.calcTestAccuracy(tune, this.classify(tune));
+		double maxAcc=oriAcc;
+		MDecTreeNode best=this.decisionTree;
+		MDecTreeNode copyOri=new MDecTreeNode(this.decisionTree);
+		//get references to all internal nodes in the tree
+		List<DecTreeNode> pruneNodeList=getPruneList(copyOri);
+		for (DecTreeNode pruneNode: pruneNodeList){
+			//make a copy for preserving original tree
+			pruneNode.terminal=true;
+			MDecTreeNode copyCurrentTree=new MDecTreeNode(copyOri);
+			double accuracy=this.calcTestAccuracy(tune, this.classify(copyCurrentTree,tune));
+			if (accuracy>maxAcc){
+				maxAcc=accuracy;
+				best=copyCurrentTree;
+			}
+			pruneNode.terminal=false;
+		}
+		this.decisionTree=best;
+	}
 
-		// TODO: add code here
-
+	private List<DecTreeNode> getPruneList(DecTreeNode copyOri) {
+		List<DecTreeNode> result = new ArrayList<DecTreeNode>();
+		if (copyOri.terminal){
+			return result;
+		} else {
+			result.add(copyOri);
+			for (DecTreeNode subNode:copyOri.children){
+				result.addAll(getPruneList(subNode));
+			}
+		}
+		return result;
 	}
 
 	@Override
@@ -424,6 +487,11 @@ public class DecisionTreeImpl extends DecisionTree {
 			int attrIndex=curNode.attrIndex;
 			String itemAttr=item.attributes.get(attrIndex);
 			boolean find=false;
+			if (4==attrIndex || 5==attrIndex){
+				int value=Integer.valueOf(itemAttr);
+				MDecTreeNode mNode=(MDecTreeNode) curNode.children.get(0);
+				itemAttr=(value> mNode.midPoint)?"A":"B";					
+			} 
 			for (DecTreeNode curNodeChild: curNode.children){
 				if (curNodeChild.parentAttributeValue.equals(itemAttr)){
 					curNode=(MDecTreeNode)curNodeChild;
@@ -432,7 +500,7 @@ public class DecisionTreeImpl extends DecisionTree {
 				}
 			}
 			if (false==find){
-//				System.out.println(item.toString());
+				System.out.println(item.toString());
 			}
 		}
 		return curNode.label;
@@ -457,6 +525,49 @@ public class DecisionTreeImpl extends DecisionTree {
 	 */
 	public void print() {
 		this.decisionTree.print(0);
+	}
+	
+	/**
+	 * Calculate predication accuracy on the test set.
+	 * Note that you should implement classify() method firstly.
+	 * DO NOT MODIFY
+	 */
+	private double calcTestAccuracy(DataSet test, String[] results) {		
+		if(results == null) {
+			 System.out.println("Error: calculating accuracy, no results returned");
+			 System.exit(-1);
+		}
+		List<Instance> testInsList = test.instances;
+		if(testInsList.size() == 0) {
+			System.out.println("Error: Size of test set is 0");
+			System.exit(-1);
+		}
+		if(testInsList.size() > results.length) {
+			System.out.println("Error: The number of predictions is inconsistant " +
+					"with the number of instances in test set, please check it");
+			System.exit(-1);
+		}		
+		int correct = 0, total = testInsList.size();
+		for(int i = 0; i < testInsList.size(); i ++)
+			if(testInsList.get(i).label.equals(results[i]))
+				correct ++;
+		return correct * 1.0 / (total*1.0);
+	}
+
+	/**
+	 * classify items given a decision tree
+	 * @param tree
+	 * @param test
+	 * @return
+	 */
+	public String[] classify(MDecTreeNode tree,DataSet test) {
+		String[] result = new String[test.instances.size()];
+		for (int index=0;index<result.length;index++){
+			Instance item = test.instances.get(index);
+			String label = getClassification(tree,item);
+			result[index]=label;
+		}
+		return result;
 	}
 
 }
