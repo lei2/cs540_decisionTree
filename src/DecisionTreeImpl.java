@@ -286,8 +286,7 @@ public class DecisionTreeImpl extends DecisionTree {
 		}
 		// find the attribute that minimize the H(Y|X)
 		int minIndex = -1;
-		// loose upper bound. Entropy should be in [0,1]
-		double minValue = 2.0;
+		double minValue = Double.MAX_VALUE;
 		for (int index = 0; index < attributes.size(); index++) {
 			// for each attribute, create a map with all possible outcomes of
 			// that attribute. Associate items with such outcomes
